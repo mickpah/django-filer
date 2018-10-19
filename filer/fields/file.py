@@ -26,20 +26,9 @@ class AdminFileWidget(ForeignKeyRawIdWidget):
     def render(self, name, value, attrs=None):
         obj = self.obj_for_value(value)
         css_id = attrs.get('id', 'id_image_x')
-        related_url = None
-        if value:
-            try:
-                file_obj = File.objects.get(pk=value)
-                related_url = file_obj.logical_folder.get_admin_directory_listing_url_path()
-            except Exception as e:
-                # catch exception and manage it. We can re-raise it for debugging
-                # purposes and/or just logging it, provided user configured
-                # proper logging configuration
-                if filer_settings.FILER_ENABLE_LOGGING:
-                    logger.error('Error while rendering file widget: %s', e)
-                if filer_settings.FILER_DEBUG:
-                    raise
-        if not related_url:
+        if obj:
+            related_url = obj.logical_folder.get_admin_directory_listing_url_path()
+        else:
             related_url = reverse('admin:filer-directory_listing-last')
         params = self.url_parameters()
         params['_pick'] = 'file'
@@ -73,12 +62,12 @@ class AdminFileWidget(ForeignKeyRawIdWidget):
         return '&nbsp;<strong>%s</strong>' % truncate_words(obj, 14)
 
     def obj_for_value(self, value):
+        key = self.rel.get_related_field().name
+        model = self.rel.model
         try:
-            key = self.rel.get_related_field().name
-            obj = self.rel.to._default_manager.get(**{key: value})
-        except:
-            obj = None
-        return obj
+            return model._default_manager.get(**{key: value})
+        except model.DoesNotExist:
+            return None
 
     class Media(object):
         css = {
