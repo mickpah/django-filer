@@ -93,7 +93,8 @@ django.jQuery(function ($) {
                 this.removeAllFiles(true);
                 fileChoose.hide();
                 lookupButton.addClass('related-lookup-change');
-                message.addClass(hiddenClass);
+                // message.addClass(hiddenClass);
+                message.css('visibility', 'hidden');
                 dropzone.removeClass(dragHoverClass);
                 dropzone.addClass(objectAttachedClass);
             },
@@ -135,7 +136,8 @@ django.jQuery(function ($) {
                 dropzone.removeClass(objectAttachedClass);
                 inputId.val('');
                 lookupButton.removeClass('related-lookup-change');
-                message.removeClass(hiddenClass);
+                // message.removeClass(hiddenClass);
+                message.css('visibility', '');
                 inputId.trigger('change');
             }
         });

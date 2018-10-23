@@ -25,7 +25,6 @@ class AdminFileWidget(ForeignKeyRawIdWidget):
 
     def render(self, name, value, attrs=None, renderer=None):
         attrs = self.build_attrs(self.attrs, attrs)
-        print('attrs', attrs)
         obj = self.obj_for_value(value)
         css_id = attrs.get('id', 'id_image_x')
         if obj:
