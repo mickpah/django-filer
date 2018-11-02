@@ -24,8 +24,8 @@ class AdminFileWidget(ForeignKeyRawIdWidget):
     choices = None
 
     def render(self, name, value, attrs=None, renderer=None):
+        obj = self.obj_for_value(self.format_value(value))
         attrs = self.build_attrs(self.attrs, attrs)
-        obj = self.obj_for_value(value)
         css_id = attrs.get('id', 'id_image_x')
         if obj:
             related_url = obj.logical_folder.get_admin_directory_listing_url_path()
