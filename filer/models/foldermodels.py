@@ -17,6 +17,7 @@ from ..utils.compatibility import (
     python_2_unicode_compatible,
     reverse,
 )
+from .thumbnailoptionmodels import ThumbnailOption
 
 
 class FolderManager(models.Manager):
@@ -124,6 +125,9 @@ class Folder(models.Model, mixins.IconsMixin):
 
     created_at = models.DateTimeField(_('created at'), auto_now_add=True)
     modified_at = models.DateTimeField(_('modified at'), auto_now=True)
+
+    thumbnail_options = models.ForeignKey(ThumbnailOption, on_delete=models.SET_NULL,
+                                          blank=True, null=True)
 
     objects = FolderManager()
 
@@ -245,6 +249,7 @@ class Folder(models.Model, mixins.IconsMixin):
         app_label = 'filer'
         verbose_name = _("Folder")
         verbose_name_plural = _("Folders")
+
 
 # MPTT registration
 try:

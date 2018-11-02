@@ -9,7 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from . import views
 from .. import settings as filer_settings
-from ..models import Clipboard, ClipboardItem, Folder
+from ..models import Clipboard, ClipboardItem, Folder, BaseImage
 from ..utils.files import (
     UploadException,
     handle_request_files_upload,
@@ -132,6 +132,11 @@ def ajax_upload(request, folder_id=None):
                     {'error': 'failed to generate icons for file'},
                     status=500,
                 )
+
+            # auto resize if folder has defined thumbnail options.
+            if isinstance(file_obj, BaseImage) and folder.thumbnail_options:
+                file_obj.resize(folder.thumbnail_options.as_dict)
+
             thumbnail = None
             # Backwards compatibility: try to get specific icon size (32px)
             # first. Then try medium icon size (they are already sorted),

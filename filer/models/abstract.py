@@ -10,11 +10,26 @@ from django.utils.translation import ugettext_lazy as _
 
 from .. import settings as filer_settings
 from ..utils.compatibility import GTE_DJANGO_1_10, PILImage, is_authenticated
-from ..utils.filer_easy_thumbnails import FilerThumbnailer
+from ..utils.filer_easy_thumbnails import FilerThumbnailer, FilerActionThumbnailer
 from ..utils.pil_exif import get_exif_for_file
+from ..thumbnail_processors import normalize_subject_location
 from .filemodels import File
 
 logger = logging.getLogger(__name__)
+
+
+def new_subject_location(original_width, original_height, new_width, new_height, x, y, crop):
+    # TODO: We could probably do even better, but this method knows nothing
+    # about actual thumbnailing algorithm details.
+    # It's better to reset subject location to the central point of the new
+    # image if the image is being cropped. The originally specified subject
+    # location could be outside of the new image.
+    if crop:
+        return int(new_width / 2), int(new_height / 2)
+    else:
+        # Calculate scaling factor of the new image compared to old.
+        scale = min(new_width / original_width, new_height / original_height)
+        return int(scale * x), int(scale * y)
 
 
 class BaseImage(File):
@@ -178,6 +193,34 @@ class BaseImage(File):
             thumbnail_storage=self.file.thumbnail_storage,
             thumbnail_basedir=self.file.thumbnail_basedir)
         return tn
+
+    def resize(self, options):
+        original_width = float(self.width)
+        original_height = float(self.height)
+        thumbnailer = FilerActionThumbnailer(file=self.file, name=self.file.name, source_storage=self.file.source_storage, thumbnail_storage=self.file.source_storage)
+        # This should overwrite the original self
+        new_image = thumbnailer.get_thumbnail({
+            'size': tuple(int(options[d] or 0) for d in ('width', 'height')),
+            'crop': options['crop'],
+            'upscale': options['upscale'],
+            'subject_location': self.subject_location,
+        })
+        self.file.file = new_image.file
+        # Since only file data was changed, there is no way for file field to know about the change.
+        # To update size, sha1, width and height fields let's call file_data_changed callback directly.
+        self.file_data_changed()
+        self.save()
+
+        subject_location = normalize_subject_location(self.subject_location)
+        if subject_location:
+            (x, y) = subject_location
+            x = float(x)
+            y = float(y)
+            new_width = float(self.width)
+            new_height = float(self.height)
+            (new_x, new_y) = new_subject_location(original_width, original_height, new_width, new_height, x, y, options['crop'])
+            self.subject_location = "%d,%d" % (new_x, new_y)
+            self.save()
 
     class Meta(object):
         app_label = 'filer'
